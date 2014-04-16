@@ -26,8 +26,8 @@ object MyBuild extends Build {
       jar -> ("lib/" + jar.getName)
     },
     packagedArtifacts in Universal ~= { _.filterNot { case (artifact, file) => artifact.`type`.contains("zip")}},
-    publish <<= publish in Universal,
-    publishLocal <<= publishLocal in Universal
+    publish <<= publish.dependsOn(publish in Universal),
+    publishLocal <<= publishLocal.dependsOn(publishLocal in Universal)
   )
 
   lazy val publishSettings = Seq(
