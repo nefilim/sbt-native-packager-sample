@@ -19,14 +19,13 @@ object MyBuild extends Build {
   )
 
   lazy val myPackagerSettings = packageArchetype.java_application ++ deploymentSettings ++ Seq(
-    mappings in (Compile, packageBin) ~= { _.filterNot { case (_, name) => // TODO not working, fix
-      Seq("/bin").contains(name)
-    }},
+    /* DO NOT INCLUDE THIS UPDATE TO MAPPINGS FROM THE DOCS, see https://github.com/sbt/sbt-native-packager/issues/227
     mappings in Universal <+= (packageBin in Compile) map { jar =>
       jar -> ("lib/" + jar.getName)
-    },
-    packagedArtifacts in Universal ~= { _.filterNot { case (artifact, file) => artifact.`type`.contains("zip")}},
-    publish <<= publish.dependsOn(publish in Universal),
+    }, 
+    */
+    packagedArtifacts in Universal ~= { _.filterNot { case (artifact, file) => artifact.`type`.contains("zip")}}, // don't publish the zip file, only the tgz, is it possible not to produce either?
+    publish <<= publish.dependsOn(publish in Universal), // depends rather than replace, we still want to publish the jar,sources,javadoc and POM (if applicable) in addition to the tgz
     publishLocal <<= publishLocal.dependsOn(publishLocal in Universal)
   )
 
@@ -49,7 +48,7 @@ object MyBuild extends Build {
     id = "myroot",
     base = file("."),
     settings = defaultSettings ++ Seq(
-      publish := { }
+      publish := { } // don't publish a root project artifact
     ),
     aggregate = Seq(common, special)
   )
@@ -58,7 +57,7 @@ object MyBuild extends Build {
     id = "common",
     base = file("common"),
     settings = defaultSettings ++ Seq(
-      publish := { },
+      publish := { }, // don't publish a common artifact, it's only a dependency for other projects
       libraryDependencies ++= Dependencies.common
     )
   )
@@ -67,8 +66,8 @@ object MyBuild extends Build {
     id = "special",
     base = file("special"),
     settings = defaultSettings ++ myPackagerSettings ++ Seq(
-      name in Universal := name.value + "_" + scalaBinaryVersion.value, // set artifactId as expected
-      mappings in Universal ++= directory("special/src/main/webapp"),
+      name in Universal := name.value + "_" + scalaBinaryVersion.value, // set artifactId as "special_2.10"
+      mappings in Universal ++= directory("special/src/main/webapp"), // include our webapp sources (html,js,css) in the tgz
       libraryDependencies ++= Dependencies.special
     )
   ) dependsOn (common)
